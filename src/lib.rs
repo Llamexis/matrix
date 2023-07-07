@@ -147,9 +147,10 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "skipped"]
     fn transpose() {
-        
+       let mat = Matrix::from_data(3,3,&DATA); 
+       let expected = Matrix::from_data(3,3,&[1,4,7,2,5,8,3,6,9]);
+       assert_eq!(format!("{}",mat.transpose()),format!("{}",expected));
     }
 
     #[test]
