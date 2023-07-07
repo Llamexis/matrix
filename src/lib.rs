@@ -1,5 +1,5 @@
 use std::fmt;
-use std::ops::{Index, Mul, IndexMut};
+use std::ops::{Index, Mul, IndexMut, Add};
 
 
 #[derive(Debug)]
@@ -44,6 +44,23 @@ impl<T: Default + Clone + Copy> Matrix<T> {
             rows: self.cols,
             data: Box::new(d),
         }
+    }
+}
+impl<T: Default + Clone + Copy + Mul<Output = T> + Add<Output = T>> Mul for Matrix<T> {
+    type Output = Matrix<T>;
+
+    fn mul(self, mat: Matrix<T>) -> Self {
+        assert!(self.cols == mat.rows,"Wrong dimensions. Try transposing one of matrix.\nDims: mat1 - {:?} != mat2 - {:?}", self.dim(), mat.dim());
+        let mut out: Matrix<T> = Matrix::new(self.rows, mat.cols);
+        for i in 0..self.rows {
+            for j in 0..mat.cols {
+                for k in 0..mat.rows {
+                    let tmp = self[(i,k)] * mat[(k,j)];
+                    out[(i,j)] = out[(i,j)] + tmp;
+                }
+            }
+        }
+        out
     }
 }
 impl<T: Default + Clone + Copy + Mul<Output = T>> Matrix<T> {
@@ -193,5 +210,31 @@ mod tests {
         }
         let expected_mat = Matrix::from_data(3,3,multipied_data.as_slice());
         assert_eq!(format!("{:?}",mat*scalar),format!("{:?}",expected_mat));
+    }
+
+    #[test]
+    fn test_multiply() {
+        let mat1: Matrix<i32> = Matrix::from_data(2, 3, &[1, 2, 3, 4, 5, 6]);
+        let mat2: Matrix<i32> = Matrix::from_data(3, 2, &[7, 8, 9, 10, 11, 12]);
+        let expected_result: Matrix<i32> = Matrix::from_data(2, 2, &[58, 64, 139, 154]);
+
+        println!("M1\n{}",mat1);
+        println!("M2\n{}",mat2);
+        let result = mat1 * mat2;
+        assert_eq!(result.dim(), expected_result.dim());
+        println!("MR\n{}",result);
+        for i in 0..result.rows {
+            for j in 0..result.cols {
+                assert_eq!(result[(i, j)], expected_result[(i, j)]);
+            }
+        }
+    }
+    #[test]
+    #[should_panic]
+    fn test_multiply_wrong_dimensions() {
+        let mat1: Matrix<i32> = Matrix::new(2, 3);
+        let mat2: Matrix<i32> = Matrix::new(4, 2);
+
+        let _result = mat1 * mat2;
     }
 }
