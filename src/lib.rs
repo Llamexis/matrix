@@ -1,7 +1,6 @@
 use std::fmt;
 use std::ops::{Index, Mul, IndexMut, Add};
 
-
 #[derive(Debug)]
 pub struct Matrix<T: Default + Clone >{
     cols: usize,
@@ -238,4 +237,17 @@ mod tests {
 
         let _result = mat1 * mat2;
     }
+    #[test]
+    fn test_multiply_by_vector() {
+        let mat = Matrix::from_data(3,3,&DATA);
+        let vec = Matrix::from_data(1,3,&[1,2,3]);
+        let res = vec * mat;
+        assert_eq!(format!("{}",res), "30 36 42 \n");
+
+        let vec = Matrix::from_data(1,3,&[1,2,3]);
+        let mat = Matrix::from_data(3,3,&DATA);
+        let res = mat*vec.transpose();
+        assert_eq!(format!("{}",res), "14 \n32 \n50 \n");
+    }
+
 }
