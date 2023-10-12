@@ -125,6 +125,12 @@ impl<T:Default + Clone > IndexMut<(usize,usize)> for Matrix<T> {
     }
 }
 
+impl<T:Default + Clone > IndexMut<(usize,&usize)> for Matrix<T> {
+    fn index_mut(&mut self, (row,col): (usize,&usize)) -> &mut T {
+        &mut self.data[row * self.cols + col]
+    }
+}
+
 impl<T: Default + Clone + Copy + Mul<Output = T>> std::ops::Mul<T> for Matrix<T> {
     type Output = Self;
 
