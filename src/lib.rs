@@ -92,6 +92,13 @@ impl<T:Default + Clone > Index<(usize,usize)> for Matrix<T> {
     }
 }
 
+impl<T:Default + Clone > Index<(usize,&usize)> for Matrix<T> {
+    type Output = T;
+    fn index(&self, (row,col): (usize,&usize)) -> &Self::Output {
+        &self.data[row * self.cols + col]
+    }
+}
+
 impl<T: Default + Clone> Index<(usize, std::ops::Range<usize>)> for Matrix<T> {
     type Output = [T];
 
