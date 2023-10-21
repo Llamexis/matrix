@@ -6,6 +6,7 @@ pub struct Matrix<T: Default + Clone >{
     cols: usize,
     rows: usize,
     data: Box<Vec<T>>,
+    iterator: usize,
 }
 
 impl<T: Default + Clone > Matrix<T> {
@@ -15,6 +16,7 @@ impl<T: Default + Clone > Matrix<T> {
             cols,
             rows,
             data,
+            iterator:0,
         }
     }
     pub fn from_data(rows:usize, cols: usize, data: &[T]) -> Self {
@@ -22,6 +24,7 @@ impl<T: Default + Clone > Matrix<T> {
             cols,
             rows,
             data: Box::new(Vec::from(data)),
+            iterator:0,
         }
     }
 
@@ -42,6 +45,7 @@ impl<T: Default + Clone + Copy> Matrix<T> {
             cols: self.rows,
             rows: self.cols,
             data: Box::new(d),
+            iterator: 0,
         }
     }
 }
@@ -140,11 +144,41 @@ impl<T: Default + Clone + Copy + Mul<Output = T>> std::ops::Mul<T> for Matrix<T>
     }
 }
 
+impl<T: Default + Clone> std::iter::Iterator for Matrix<T>{
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.iterator {
+            i if i < self.data.len() => {
+                let tmp = &self.data[i];
+                self.iterator=self.iterator + 1;
+                Some(tmp.clone())
+            }
+            _ => None,
+        }
+    }
+
+}
+
 
 #[cfg(test)]
 mod tests {
     use super::*;
     const DATA: [i32; 9] = [1,2,3,4,5,6,7,8,9];
+
+    #[test]
+    fn iteration() {
+        let mut mat: Matrix<i32> = Matrix::from_data(3,3,&DATA);
+        let mut tmp = DATA.iter();
+        assert_eq!(tmp.next(),mat.next().as_ref());
+        assert_eq!(tmp.next(),mat.next().as_ref());
+        assert_eq!(tmp.next(),mat.next().as_ref());
+        assert_eq!(tmp.next(),mat.next().as_ref());
+        assert_eq!(tmp.next(),mat.next().as_ref());
+        assert_eq!(tmp.next(),mat.next().as_ref());
+        assert_eq!(tmp.next(),mat.next().as_ref());
+        assert_eq!(tmp.next(),mat.next().as_ref());
+        assert_eq!(tmp.next(),mat.next().as_ref());
+    }
 
     #[test]
     fn new() {
