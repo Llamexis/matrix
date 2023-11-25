@@ -3,8 +3,8 @@ use std::ops::{Index, Mul, IndexMut, Add};
 
 #[derive(Debug)]
 pub struct Matrix<T: Default + Clone >{
-    cols: usize,
-    rows: usize,
+    pub cols: usize,
+    pub rows: usize,
     data: Box<Vec<T>>,
     iterator: usize,
 }
