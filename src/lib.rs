@@ -6,7 +6,6 @@ pub struct Matrix<T: Default + Clone >{
     pub cols: usize,
     pub rows: usize,
     data: Box<Vec<T>>,
-    iterator: usize,
 }
 
 impl<T: Default + Clone > Matrix<T> {
@@ -16,7 +15,6 @@ impl<T: Default + Clone > Matrix<T> {
             cols,
             rows,
             data,
-            iterator:0,
         }
     }
     pub fn from_data(rows:usize, cols: usize, data: &[T]) -> Self {
@@ -24,8 +22,11 @@ impl<T: Default + Clone > Matrix<T> {
             cols,
             rows,
             data: Box::new(Vec::from(data)),
-            iterator:0,
         }
+    }
+    pub fn iter(&self) -> MatrixIterator<'_, T> {
+
+        MatrixIterator { iterator: 0, data: &self.data }
     }
 
     pub fn dim(&self) -> (usize,usize) {
@@ -45,7 +46,6 @@ impl<T: Default + Clone + Copy> Matrix<T> {
             cols: self.rows,
             rows: self.cols,
             data: Box::new(d),
-            iterator: 0,
         }
     }
 }
@@ -144,7 +144,7 @@ impl<T: Default + Clone + Copy + Mul<Output = T>> std::ops::Mul<T> for Matrix<T>
     }
 }
 
-impl<T: Default + Clone> std::iter::Iterator for Matrix<T>{
+impl<T: Default + Clone> std::iter::Iterator for MatrixIterator<'_, T>{
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         match self.iterator {
@@ -159,6 +159,10 @@ impl<T: Default + Clone> std::iter::Iterator for Matrix<T>{
 
 }
 
+pub struct MatrixIterator<'a, T> {
+    iterator: usize,
+    data: &'a [T],
+}
 
 #[cfg(test)]
 mod tests {
@@ -167,7 +171,8 @@ mod tests {
 
     #[test]
     fn iteration() {
-        let mut mat: Matrix<i32> = Matrix::from_data(3,3,&DATA);
+        let mat: Matrix<i32> = Matrix::from_data(3,3,&DATA);
+        let mut mat = mat.iter();
         let mut tmp = DATA.iter();
         assert_eq!(tmp.next(),mat.next().as_ref());
         assert_eq!(tmp.next(),mat.next().as_ref());
