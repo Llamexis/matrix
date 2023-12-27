@@ -187,7 +187,24 @@ pub struct MatrixMutIterator<'a, T> {
     iterator: usize,
     data: &'a mut [T],
 }
+impl<T: Default + Clone + Copy + Add<Output = T>> Matrix<T> {
+    pub fn add_by_scalar(&mut self, scalar: T) -> &Self {
+        for row in 0..self.rows{
+            for col in 0..self.cols{
+                self.data[col+row*self.cols] = self.data[col+row*self.cols] + scalar;
+            }
+        }
+        self
+    }
+}
+impl<T: Default + Clone + Copy + Add<Output = T>> std::ops::Add<T> for Matrix<T> {
+    type Output = Self;
 
+    fn add(mut self, scalar: T) -> Self::Output {
+        self.add_by_scalar(scalar);
+        self
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
