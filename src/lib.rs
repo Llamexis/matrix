@@ -71,7 +71,7 @@ impl<T: Default + Clone + Copy + Mul<Output = T> + Add<Output = T>> Mul for Matr
 }
 impl<T: Default + Clone + Copy + Mul<Output = T> + Add<Output = T>> Matrix<T> {
 
-    pub fn dot(&self,mat:&Matrix<T>) -> Matrix<T> {
+    pub fn dot(&self,mat:&Matrix<T>) -> Self {
         assert!(self.cols == mat.rows,"Wrong dimensions. Try transposing one of matrix.\nDims: mat1 - {:?} != mat2 - {:?}", self.dim(), mat.dim());
         let mut out: Matrix<T> = Matrix::new(self.rows, mat.cols);
         for i in 0..self.rows {
