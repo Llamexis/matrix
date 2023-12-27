@@ -80,6 +80,31 @@ impl<T: Default + Clone + Copy + Mul<Output = T>> Matrix<T> {
     }
 }
 
+impl<T: Default + Clone + Copy + Mul<Output = T>> std::ops::Mul<T> for Matrix<T> {
+    type Output = Self;
+
+    fn mul(mut self, scalar: T) -> Self::Output {
+        self.multiply_by_scalar(scalar);
+        self
+    }
+}
+impl<T: Default + Clone + Copy + Mul<Output = T> + Add<Output = T>> Mul for &'static Matrix<T> {
+    type Output = Matrix<T>;
+
+    fn mul(self, mat: &Matrix<T>) -> Self::Output {
+        assert!(self.cols == mat.rows,"Wrong dimensions. Try transposing one of matrix.\nDims: mat1 - {:?} != mat2 - {:?}", self.dim(), mat.dim());
+        let mut out: Matrix<T> = Matrix::new(self.rows, mat.cols);
+        for i in 0..self.rows {
+            for j in 0..mat.cols {
+                for k in 0..mat.rows {
+                    let tmp = self[(i,k)] * mat[(k,j)];
+                    out[(i,j)] = out[(i,j)] + tmp;
+                }
+            }
+        }
+        out
+    }
+}
 impl<T: fmt::Display + Clone + Default> fmt::Display for Matrix<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for row in 0..self.rows {
@@ -138,14 +163,6 @@ impl<T:Default + Clone > IndexMut<(usize,&usize)> for Matrix<T> {
     }
 }
 
-impl<T: Default + Clone + Copy + Mul<Output = T>> std::ops::Mul<T> for Matrix<T> {
-    type Output = Self;
-
-    fn mul(mut self, scalar: T) -> Self::Output {
-        self.multiply_by_scalar(scalar);
-        self
-    }
-}
 
 impl<T: Default + Clone> std::iter::Iterator for MatrixIterator<'_, T>{
     type Item = T;
