@@ -28,6 +28,9 @@ impl<T: Default + Clone > Matrix<T> {
 
         MatrixIterator { iterator: 0, data: &self.data }
     }
+    pub fn iter_mut(&mut self) -> MatrixMutIterator<'_, T> {
+        MatrixMutIterator {iterator: 0, data :&mut self.data}
+    }
 
     pub fn dim(&self) -> (usize,usize) {
         (self.cols,self.rows)
@@ -159,9 +162,30 @@ impl<T: Default + Clone> std::iter::Iterator for MatrixIterator<'_, T>{
 
 }
 
+impl <'a, T: Default + Clone> std::iter::Iterator for MatrixMutIterator<'a, T> {
+    type Item = &'a mut T;
+    fn next(&mut self) -> Option<Self::Item> {
+
+        match self.iterator {
+            i if i < self.data.len() => {
+                let ptr = self.data.as_mut_ptr();
+                self.iterator += 1;
+                unsafe {
+                    Some(&mut *ptr.add(i))
+                }
+            }
+            _ => None,
+        }
+    }
+    
+}
 pub struct MatrixIterator<'a, T> {
     iterator: usize,
     data: &'a [T],
+}
+pub struct MatrixMutIterator<'a, T> {
+    iterator: usize,
+    data: &'a mut [T],
 }
 
 #[cfg(test)]
@@ -183,8 +207,25 @@ mod tests {
         assert_eq!(tmp.next(),mat.next().as_ref());
         assert_eq!(tmp.next(),mat.next().as_ref());
         assert_eq!(tmp.next(),mat.next().as_ref());
+        assert_eq!(None, mat.next().as_ref());
     }
 
+    #[test]
+    fn mut_iteration() {
+        let mut mat: Matrix<i32> = Matrix::from_data(3,3,&DATA);
+        let mut mat = mat.iter_mut();
+        let mut tmp = DATA.iter();
+        assert_eq!(tmp.next(),mat.next().as_deref());
+        assert_eq!(tmp.next(),mat.next().as_deref());
+        assert_eq!(tmp.next(),mat.next().as_deref());
+        assert_eq!(tmp.next(),mat.next().as_deref());
+        assert_eq!(tmp.next(),mat.next().as_deref());
+        assert_eq!(tmp.next(),mat.next().as_deref());
+        assert_eq!(tmp.next(),mat.next().as_deref());
+        assert_eq!(tmp.next(),mat.next().as_deref());
+        assert_eq!(tmp.next(),mat.next().as_deref());
+        assert_eq!(None, mat.next().as_ref());
+    }
     #[test]
     fn new() {
         let mat: Matrix<u8> = Matrix::new(3,3);
