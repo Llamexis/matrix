@@ -1,7 +1,7 @@
 use std::fmt;
 use std::ops::{Index, Mul, IndexMut, Add};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Matrix<T: Default + Clone >{
     pub cols: usize,
     pub rows: usize,
@@ -358,6 +358,17 @@ mod tests {
         let mat = Matrix::from_data(3,3,&DATA);
         let res = mat*vec.transpose();
         assert_eq!(format!("{}",res), "14 \n32 \n50 \n");
+    }
+    #[test]
+    #[should_panic]
+    fn test_adding_by_scalar() {
+        let mat = Matrix::from_data(3,3,&DATA);
+        let res = mat+1;
+        assert_eq!(format!("{}",res), "2 3 4 \n5 6 7 \n8 9 10 \n");
+        let mat: Matrix<f32> = Matrix::from_data(3,3,&[1.1,2.1,3.1,4.1,5.1,6.1,7.1,8.1,9.1]);
+        let res = mat + 1.1;
+        assert_eq!(format!("{}",res),"2.2 3.2 4.2 \n5.2 6.2 7.2 \n8.2 9.2 10.2 \n");
+
     }
 
 }
