@@ -1,41 +1,41 @@
 use std::fmt;
-use std::ops::{Index, Mul, IndexMut, Add};
+use std::ops::{Add, Index, IndexMut, Mul};
 
 #[derive(Debug, Clone)]
-pub struct Matrix<T: Default + Clone >{
+pub struct Matrix<T: Default + Clone> {
     pub cols: usize,
     pub rows: usize,
     data: Box<Vec<T>>,
 }
 
-impl<T: Default + Clone > Matrix<T> {
+impl<T: Default + Clone> Matrix<T> {
     pub fn new(rows: usize, cols: usize) -> Matrix<T> {
-    let  data = Box::new(vec![T::default();cols*rows]);
-        Self{
-            cols,
-            rows,
-            data,
-        }
+        let data = Box::new(vec![T::default(); cols * rows]);
+        Self { cols, rows, data }
     }
-    pub fn from_data(rows:usize, cols: usize, data: &[T]) -> Self {
-        Self{
+    pub fn from_data(rows: usize, cols: usize, data: &[T]) -> Self {
+        Self {
             cols,
             rows,
             data: Box::new(Vec::from(data)),
         }
     }
     pub fn iter(&self) -> MatrixIterator<'_, T> {
-
-        MatrixIterator { iterator: 0, data: &self.data }
+        MatrixIterator {
+            iterator: 0,
+            data: &self.data,
+        }
     }
     pub fn iter_mut(&mut self) -> MatrixMutIterator<'_, T> {
-        MatrixMutIterator {iterator: 0, data :&mut self.data}
+        MatrixMutIterator {
+            iterator: 0,
+            data: &mut self.data,
+        }
     }
 
-    pub fn dim(&self) -> (usize,usize) {
-        (self.cols,self.rows)
+    pub fn dim(&self) -> (usize, usize) {
+        (self.cols, self.rows)
     }
-
 }
 impl<T: Default + Clone + Copy> Matrix<T> {
     pub fn transpose(&self) -> Matrix<T> {
@@ -51,18 +51,59 @@ impl<T: Default + Clone + Copy> Matrix<T> {
             data: Box::new(d),
         }
     }
+    pub fn add_col(&mut self, init_val: Option<T>) {
+        let new_col = self.cols + 1;
+        let init_val = match init_val {
+            Some(x) => x,
+            None => T::default(),
+        };
+        let mut new_data = vec![init_val; new_col * self.rows];
+        for row in 0..self.rows {
+            for col in 0..new_col {
+                match col {
+                    0 => continue,
+                    _ => new_data[row * new_col + col] = self.data[row * self.cols + col - 1],
+                }
+            }
+        }
+        self.cols = new_col;
+        self.data = Box::new(new_data);
+    }
+    pub fn add_row(&mut self, init_val: Option<T>) {
+        let new_rows = self.rows + 1;
+        let init_val = match init_val {
+            Some(x) => x,
+            None => T::default(),
+        };
+        let mut new_data = vec![init_val; new_rows * self.cols];
+        for row in 0..new_rows {
+            for col in 0..self.cols {
+                match row {
+                    0 => continue,
+                    _ => new_data[row * self.cols + col] = self.data[(row - 1) * self.cols + col ],
+                }
+            }
+        }
+        self.rows = new_rows;
+        self.data = Box::new(new_data);
+    }
 }
 impl<T: Default + Clone + Copy + Mul<Output = T> + Add<Output = T>> Mul for Matrix<T> {
     type Output = Matrix<T>;
 
     fn mul(self, mat: Matrix<T>) -> Self {
-        assert!(self.cols == mat.rows,"Wrong dimensions. Try transposing one of matrix.\nDims: mat1 - {:?} != mat2 - {:?}", self.dim(), mat.dim());
+        assert!(
+            self.cols == mat.rows,
+            "Wrong dimensions. Try transposing one of matrix.\nDims: mat1 - {:?} != mat2 - {:?}",
+            self.dim(),
+            mat.dim()
+        );
         let mut out: Matrix<T> = Matrix::new(self.rows, mat.cols);
         for i in 0..self.rows {
             for j in 0..mat.cols {
                 for k in 0..mat.rows {
-                    let tmp = self[(i,k)] * mat[(k,j)];
-                    out[(i,j)] = out[(i,j)] + tmp;
+                    let tmp = self[(i, k)] * mat[(k, j)];
+                    out[(i, j)] = out[(i, j)] + tmp;
                 }
             }
         }
@@ -70,27 +111,30 @@ impl<T: Default + Clone + Copy + Mul<Output = T> + Add<Output = T>> Mul for Matr
     }
 }
 impl<T: Default + Clone + Copy + Mul<Output = T> + Add<Output = T>> Matrix<T> {
-
-    pub fn dot(&self,mat:&Matrix<T>) -> Self {
-        assert!(self.cols == mat.rows,"Wrong dimensions. Try transposing one of matrix.\nDims: mat1 - {:?} != mat2 - {:?}", self.dim(), mat.dim());
+    pub fn dot(&self, mat: &Matrix<T>) -> Self {
+        assert!(
+            self.cols == mat.rows,
+            "Wrong dimensions. Try transposing one of matrix.\nDims: mat1 - {:?} != mat2 - {:?}",
+            self.dim(),
+            mat.dim()
+        );
         let mut out: Matrix<T> = Matrix::new(self.rows, mat.cols);
         for i in 0..self.rows {
             for j in 0..mat.cols {
                 for k in 0..mat.rows {
-                    let tmp = self[(i,k)] * mat[(k,j)];
-                    out[(i,j)] = out[(i,j)] + tmp;
+                    let tmp = self[(i, k)] * mat[(k, j)];
+                    out[(i, j)] = out[(i, j)] + tmp;
                 }
             }
         }
         out
-
     }
 }
 impl<T: Default + Clone + Copy + Mul<Output = T>> Matrix<T> {
     pub fn multiply_by_scalar(&mut self, scalar: T) -> &Self {
-        for row in 0..self.rows{
-            for col in 0..self.cols{
-                self.data[col+row*self.cols] = self.data[col+row*self.cols] * scalar;
+        for row in 0..self.rows {
+            for col in 0..self.cols {
+                self.data[col + row * self.cols] = self.data[col + row * self.cols] * scalar;
             }
         }
         self
@@ -117,16 +161,16 @@ impl<T: fmt::Display + Clone + Default> fmt::Display for Matrix<T> {
     }
 }
 
-impl<T:Default + Clone > Index<(usize,usize)> for Matrix<T> {
+impl<T: Default + Clone> Index<(usize, usize)> for Matrix<T> {
     type Output = T;
-    fn index(&self, (row,col): (usize,usize)) -> &Self::Output {
+    fn index(&self, (row, col): (usize, usize)) -> &Self::Output {
         &self.data[row * self.cols + col]
     }
 }
 
-impl<T:Default + Clone > Index<(usize,&usize)> for Matrix<T> {
+impl<T: Default + Clone> Index<(usize, &usize)> for Matrix<T> {
     type Output = T;
-    fn index(&self, (row,col): (usize,&usize)) -> &Self::Output {
+    fn index(&self, (row, col): (usize, &usize)) -> &Self::Output {
         &self.data[row * self.cols + col]
     }
 }
@@ -151,50 +195,44 @@ impl<T: Default + Clone> Index<(usize, std::ops::RangeFull)> for Matrix<T> {
         &self.data[start_idx..end_idx]
     }
 }
-impl<T:Default + Clone > IndexMut<(usize,usize)> for Matrix<T> {
-    fn index_mut(&mut self, (row,col): (usize,usize)) -> &mut T {
+impl<T: Default + Clone> IndexMut<(usize, usize)> for Matrix<T> {
+    fn index_mut(&mut self, (row, col): (usize, usize)) -> &mut T {
         &mut self.data[row * self.cols + col]
     }
 }
 
-impl<T:Default + Clone > IndexMut<(usize,&usize)> for Matrix<T> {
-    fn index_mut(&mut self, (row,col): (usize,&usize)) -> &mut T {
+impl<T: Default + Clone> IndexMut<(usize, &usize)> for Matrix<T> {
+    fn index_mut(&mut self, (row, col): (usize, &usize)) -> &mut T {
         &mut self.data[row * self.cols + col]
     }
 }
 
-
-impl<T: Default + Clone> std::iter::Iterator for MatrixIterator<'_, T>{
+impl<T: Default + Clone> std::iter::Iterator for MatrixIterator<'_, T> {
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         match self.iterator {
             i if i < self.data.len() => {
                 let tmp = &self.data[i];
-                self.iterator=self.iterator + 1;
+                self.iterator = self.iterator + 1;
                 Some(tmp.clone())
             }
             _ => None,
         }
     }
-
 }
 
-impl <'a, T: Default + Clone> std::iter::Iterator for MatrixMutIterator<'a, T> {
+impl<'a, T: Default + Clone> std::iter::Iterator for MatrixMutIterator<'a, T> {
     type Item = &'a mut T;
     fn next(&mut self) -> Option<Self::Item> {
-
         match self.iterator {
             i if i < self.data.len() => {
                 let ptr = self.data.as_mut_ptr();
                 self.iterator += 1;
-                unsafe {
-                    Some(&mut *ptr.add(i))
-                }
+                unsafe { Some(&mut *ptr.add(i)) }
             }
             _ => None,
         }
     }
-    
 }
 pub struct MatrixIterator<'a, T> {
     iterator: usize,
@@ -206,9 +244,9 @@ pub struct MatrixMutIterator<'a, T> {
 }
 impl<T: Default + Clone + Copy + Add<Output = T>> Matrix<T> {
     pub fn add_by_scalar(&mut self, scalar: T) -> &Self {
-        for row in 0..self.rows{
-            for col in 0..self.cols{
-                self.data[col+row*self.cols] = self.data[col+row*self.cols] + scalar;
+        for row in 0..self.rows {
+            for col in 0..self.cols {
+                self.data[col + row * self.cols] = self.data[col + row * self.cols] + scalar;
             }
         }
         self
@@ -225,63 +263,66 @@ impl<T: Default + Clone + Copy + Add<Output = T>> std::ops::Add<T> for Matrix<T>
 #[cfg(test)]
 mod tests {
     use super::*;
-    const DATA: [i32; 9] = [1,2,3,4,5,6,7,8,9];
+    const DATA: [i32; 9] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
     #[test]
     fn iteration() {
-        let mat: Matrix<i32> = Matrix::from_data(3,3,&DATA);
+        let mat: Matrix<i32> = Matrix::from_data(3, 3, &DATA);
         let mut mat = mat.iter();
         let mut tmp = DATA.iter();
-        assert_eq!(tmp.next(),mat.next().as_ref());
-        assert_eq!(tmp.next(),mat.next().as_ref());
-        assert_eq!(tmp.next(),mat.next().as_ref());
-        assert_eq!(tmp.next(),mat.next().as_ref());
-        assert_eq!(tmp.next(),mat.next().as_ref());
-        assert_eq!(tmp.next(),mat.next().as_ref());
-        assert_eq!(tmp.next(),mat.next().as_ref());
-        assert_eq!(tmp.next(),mat.next().as_ref());
-        assert_eq!(tmp.next(),mat.next().as_ref());
+        assert_eq!(tmp.next(), mat.next().as_ref());
+        assert_eq!(tmp.next(), mat.next().as_ref());
+        assert_eq!(tmp.next(), mat.next().as_ref());
+        assert_eq!(tmp.next(), mat.next().as_ref());
+        assert_eq!(tmp.next(), mat.next().as_ref());
+        assert_eq!(tmp.next(), mat.next().as_ref());
+        assert_eq!(tmp.next(), mat.next().as_ref());
+        assert_eq!(tmp.next(), mat.next().as_ref());
+        assert_eq!(tmp.next(), mat.next().as_ref());
         assert_eq!(None, mat.next().as_ref());
     }
 
     #[test]
     fn mut_iteration() {
-        let mut mat: Matrix<i32> = Matrix::from_data(3,3,&DATA);
+        let mut mat: Matrix<i32> = Matrix::from_data(3, 3, &DATA);
         let mut mat = mat.iter_mut();
         let mut tmp = DATA.iter();
-        assert_eq!(tmp.next(),mat.next().as_deref());
-        assert_eq!(tmp.next(),mat.next().as_deref());
-        assert_eq!(tmp.next(),mat.next().as_deref());
-        assert_eq!(tmp.next(),mat.next().as_deref());
-        assert_eq!(tmp.next(),mat.next().as_deref());
-        assert_eq!(tmp.next(),mat.next().as_deref());
-        assert_eq!(tmp.next(),mat.next().as_deref());
-        assert_eq!(tmp.next(),mat.next().as_deref());
-        assert_eq!(tmp.next(),mat.next().as_deref());
+        assert_eq!(tmp.next(), mat.next().as_deref());
+        assert_eq!(tmp.next(), mat.next().as_deref());
+        assert_eq!(tmp.next(), mat.next().as_deref());
+        assert_eq!(tmp.next(), mat.next().as_deref());
+        assert_eq!(tmp.next(), mat.next().as_deref());
+        assert_eq!(tmp.next(), mat.next().as_deref());
+        assert_eq!(tmp.next(), mat.next().as_deref());
+        assert_eq!(tmp.next(), mat.next().as_deref());
+        assert_eq!(tmp.next(), mat.next().as_deref());
         assert_eq!(None, mat.next().as_ref());
     }
     #[test]
     fn new() {
-        let mat: Matrix<u8> = Matrix::new(3,3);
-        assert_eq!(format!("{}",mat),"0 0 0 \n0 0 0 \n0 0 0 \n");
+        let mat: Matrix<u8> = Matrix::new(3, 3);
+        assert_eq!(format!("{}", mat), "0 0 0 \n0 0 0 \n0 0 0 \n");
     }
 
     #[test]
     fn from_data() {
-        let mat = Matrix::from_data(3,3,&[1.1,2.1,3.1,4.1,5.1,6.1,7.1,8.1,9.1]);
-        assert_eq!(format!("{}",mat),"1.1 2.1 3.1 \n4.1 5.1 6.1 \n7.1 8.1 9.1 \n");
+        let mat = Matrix::from_data(3, 3, &[1.1, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.1, 9.1]);
+        assert_eq!(
+            format!("{}", mat),
+            "1.1 2.1 3.1 \n4.1 5.1 6.1 \n7.1 8.1 9.1 \n"
+        );
     }
 
     #[test]
     fn transpose() {
-       let mat = Matrix::from_data(3,3,&DATA); 
-       let expected = Matrix::from_data(3,3,&[1,4,7,2,5,8,3,6,9]);
-       assert_eq!(format!("{}",mat.transpose()),format!("{}",expected));
+        let mat = Matrix::from_data(3, 3, &DATA);
+        let expected = Matrix::from_data(3, 3, &[1, 4, 7, 2, 5, 8, 3, 6, 9]);
+        assert_eq!(format!("{}", mat.transpose()), format!("{}", expected));
     }
 
     #[test]
     fn simple_indexing() {
-        let mut mat: Matrix<u8> = Matrix::new(3,4);
+        let mut mat: Matrix<u8> = Matrix::new(3, 4);
         mat[(0, 0)] = 1;
         mat[(0, 1)] = 2;
         mat[(0, 2)] = 3;
@@ -297,12 +338,12 @@ mod tests {
         mat[(2, 2)] = 11;
         mat[(2, 3)] = 12;
 
-        assert_eq!(format!("{}",mat),"1 2 3 4 \n5 6 7 8 \n9 10 11 12 \n");
-    } 
+        assert_eq!(format!("{}", mat), "1 2 3 4 \n5 6 7 8 \n9 10 11 12 \n");
+    }
 
     #[test]
-    fn row_indexing(){
-        let mut mat: Matrix<u8> = Matrix::new(3,4);
+    fn row_indexing() {
+        let mut mat: Matrix<u8> = Matrix::new(3, 4);
         mat[(0, 0)] = 1;
         mat[(0, 1)] = 2;
         mat[(0, 2)] = 3;
@@ -317,26 +358,26 @@ mod tests {
         mat[(2, 1)] = 10;
         mat[(2, 2)] = 11;
         mat[(2, 3)] = 12;
-        
-        let row = &mat[(0,..)];
-        assert_eq!(format!("{:?}",row),format!("{:?}",&[1,2,3,4]));
-        let row = &mat[(0,1..4)];
-        assert_eq!(format!("{:?}",row),format!("{:?}",&[2,3,4]));
+
+        let row = &mat[(0, ..)];
+        assert_eq!(format!("{:?}", row), format!("{:?}", &[1, 2, 3, 4]));
+        let row = &mat[(0, 1..4)];
+        assert_eq!(format!("{:?}", row), format!("{:?}", &[2, 3, 4]));
         mat = mat.transpose();
-        let row = &mat[(0,..)];
-        assert_eq!(format!("{:?}",row),format!("{:?}",&[1,5,9]));
+        let row = &mat[(0, ..)];
+        assert_eq!(format!("{:?}", row), format!("{:?}", &[1, 5, 9]));
     }
 
     #[test]
     fn multiply_by_scalar() {
         let scalar = 3;
-        let mat = Matrix::from_data(3,3,&DATA);
+        let mat = Matrix::from_data(3, 3, &DATA);
         let mut multipied_data = Vec::new();
         for i in DATA {
             multipied_data.push(i * scalar);
         }
-        let expected_mat = Matrix::from_data(3,3,multipied_data.as_slice());
-        assert_eq!(format!("{:?}",mat*scalar),format!("{:?}",expected_mat));
+        let expected_mat = Matrix::from_data(3, 3, multipied_data.as_slice());
+        assert_eq!(format!("{:?}", mat * scalar), format!("{:?}", expected_mat));
     }
 
     #[test]
@@ -345,11 +386,11 @@ mod tests {
         let mat2: Matrix<i32> = Matrix::from_data(3, 2, &[7, 8, 9, 10, 11, 12]);
         let expected_result: Matrix<i32> = Matrix::from_data(2, 2, &[58, 64, 139, 154]);
 
-        println!("M1\n{}",mat1);
-        println!("M2\n{}",mat2);
+        println!("M1\n{}", mat1);
+        println!("M2\n{}", mat2);
         let result = mat1 * mat2;
         assert_eq!(result.dim(), expected_result.dim());
-        println!("MR\n{}",result);
+        println!("MR\n{}", result);
         for i in 0..result.rows {
             for j in 0..result.cols {
                 assert_eq!(result[(i, j)], expected_result[(i, j)]);
@@ -366,26 +407,41 @@ mod tests {
     }
     #[test]
     fn test_multiply_by_vector() {
-        let mat = Matrix::from_data(3,3,&DATA);
-        let vec = Matrix::from_data(1,3,&[1,2,3]);
+        let mat = Matrix::from_data(3, 3, &DATA);
+        let vec = Matrix::from_data(1, 3, &[1, 2, 3]);
         let res = vec * mat;
-        assert_eq!(format!("{}",res), "30 36 42 \n");
+        assert_eq!(format!("{}", res), "30 36 42 \n");
 
-        let vec = Matrix::from_data(1,3,&[1,2,3]);
-        let mat = Matrix::from_data(3,3,&DATA);
-        let res = mat*vec.transpose();
-        assert_eq!(format!("{}",res), "14 \n32 \n50 \n");
+        let vec = Matrix::from_data(1, 3, &[1, 2, 3]);
+        let mat = Matrix::from_data(3, 3, &DATA);
+        let res = mat * vec.transpose();
+        assert_eq!(format!("{}", res), "14 \n32 \n50 \n");
     }
     #[test]
     #[should_panic]
     fn test_adding_by_scalar() {
-        let mat = Matrix::from_data(3,3,&DATA);
-        let res = mat+1;
-        assert_eq!(format!("{}",res), "2 3 4 \n5 6 7 \n8 9 10 \n");
-        let mat: Matrix<f32> = Matrix::from_data(3,3,&[1.1,2.1,3.1,4.1,5.1,6.1,7.1,8.1,9.1]);
+        let mat = Matrix::from_data(3, 3, &DATA);
+        let res = mat + 1;
+        assert_eq!(format!("{}", res), "2 3 4 \n5 6 7 \n8 9 10 \n");
+        let mat: Matrix<f32> =
+            Matrix::from_data(3, 3, &[1.1, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.1, 9.1]);
         let res = mat + 1.1;
-        assert_eq!(format!("{}",res),"2.2 3.2 4.2 \n5.2 6.2 7.2 \n8.2 9.2 10.2 \n");
-
+        assert_eq!(
+            format!("{}", res),
+            "2.2 3.2 4.2 \n5.2 6.2 7.2 \n8.2 9.2 10.2 \n"
+        );
     }
 
+    #[test]
+    fn test_adding_column() {
+        let mut mat = Matrix::from_data(3, 3, &DATA);
+        mat.add_col(Some(1));
+        assert_eq!(format!("{}", mat), "1 1 2 3 \n1 4 5 6 \n1 7 8 9 \n");
+    }
+    #[test]
+    fn test_adding_row() {
+        let mut mat = Matrix::from_data(3, 3, &DATA);
+        mat.add_row(Some(1));
+        assert_eq!(format!("{}", mat), "1 1 1 \n1 2 3 \n4 5 6 \n7 8 9 \n");
+    }
 }
